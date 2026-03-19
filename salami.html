@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eid Salami</title>
+    <!-- Importing a festive font -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --emerald: #064e3b;
+            --gold: #fbbf24;
+            --light-gold: #fef3c7;
+        }
+
+        body {
+            background-color: var(--emerald);
+            background-image: radial-gradient(circle at center, #065f46 0%, #064e3b 100%);
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Decorative Moons */
+        .decoration {
+            position: absolute;
+            font-size: 2rem;
+            opacity: 0.3;
+            user-select: none;
+        }
+
+        h1 {
+            font-family: 'Cinzel', serif;
+            color: var(--gold);
+            font-size: 3rem;
+            margin-top: 40px;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .subtitle {
+            font-style: italic;
+            color: var(--light-gold);
+            margin-bottom: 30px;
+        }
+
+        /* Wheel Container */
+        .wheel-container {
+            position: relative;
+            width: 340px;
+            height: 340px;
+            margin-bottom: 40px;
+            filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.3));
+        }
+
+        .pointer {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; 
+            height: 0; 
+            border-left: 18px solid transparent;
+            border-right: 18px solid transparent;
+            border-top: 35px solid var(--gold); 
+            z-index: 10;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
+        }
+
+        #wheelCanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 10px solid var(--gold);
+            box-sizing: border-box;
+            background: #fff;
+            transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1);
+        }
+
+        /* Button Styling */
+        button {
+            background: linear-gradient(145deg, #fbbf24, #d97706);
+            color: #064e3b;
+            border: none;
+            padding: 18px 50px;
+            font-size: 1.4rem;
+            font-weight: 800;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px rgba(251, 191, 36, 0.4);
+        }
+
+        button:active { transform: scale(0.95); }
+
+        /* Pop-up Modal */
+        .modal {
+            display: none; 
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: linear-gradient(to bottom, #fff, #fefce8);
+            color: #1a3626;
+            padding: 40px;
+            border-radius: 30px;
+            width: 85%;
+            max-width: 400px;
+            text-align: center;
+            border: 5px solid var(--gold);
+            animation: eidPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes eidPop {
+            0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+            100% { transform: scale(1) rotate(0); opacity: 1; }
+        }
+
+        .dua-text {
+            font-size: 2.2rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #064e3b, #d97706);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 25px 0;
+        }
+
+        #closeBtn {
+            background: var(--emerald);
+            color: var(--gold);
+            padding: 10px 30px;
+            font-size: 1.1rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Decorative elements -->
+    <div class="decoration" style="top: 10%; left: 10%;">🌙</div>
+    <div class="decoration" style="top: 15%; right: 15%;">⭐</div>
+    <div class="decoration" style="bottom: 20%; left: 5%;">⭐</div>
+
+    <h1>Eid Mubarak!</h1>
+    <p class="subtitle">Eid Salami from Rahin - Spin the blessed wheel!</p>
+
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <canvas id="wheelCanvas" width="500" height="500"></canvas>
+    </div>
+
+    <button id="spinBtn">Get My Salami!</button>
+
+    <div class="modal" id="resultModal">
+        <div class="modal-content">
+            <h2 style="font-family: 'Cinzel';">Alhamdulillah! 🤲</h2>
+            <div class="dua-text">Lots of Dua for you🫶🏻</div>
+            <p>May your Eid be filled with joy and blessings.</p>
+            <button id="closeBtn">Ameen!</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("wheelCanvas");
+        const ctx = canvas.getContext("2d");
+        const spinBtn = document.getElementById("spinBtn");
+        const modal = document.getElementById("resultModal");
+        const closeBtn = document.getElementById("closeBtn");
+
+        // Festive Emerald, Gold, and Ruby colors
+        const segments = [
+            { label: 'DUA', color: '#fbbf24', text: '#064e3b' },
+            { label: '5 tk', color: '#065f46', text: '#fff' },
+            { label: '10 tk', color: '#991b1b', text: '#fff' },
+            { label: '50 tk', color: '#065f46', text: '#fff' },
+            { label: '100 tk', color: '#991b1b', text: '#fff' },
+            { label: '500 tk', color: '#065f46', text: '#fff' }
+        ];
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = canvas.width / 2;
+
+        function drawWheel() {
+            const arc = (2 * Math.PI) / segments.length;
+            for (let i = 0; i < segments.length; i++) {
+                const angle = (i * arc) - (Math.PI / 2) - (arc / 2);
+                ctx.beginPath();
+                ctx.fillStyle = segments[i].color;
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, angle, angle + arc);
+                ctx.fill();
+                ctx.strokeStyle = '#fbbf24';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(angle + arc / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = segments[i].text;
+                ctx.font = "bold 35px Poppins";
+                ctx.fillText(segments[i].label, radius - 40, 10);
+                ctx.restore();
+            }
+        }
+
+        drawWheel();
+
+        let rotation = 0;
+
+        spinBtn.addEventListener("click", () => {
+            spinBtn.disabled = true;
+            
+            // Rigged to land on DUA (Index 0)
+            const extraSpins = 360 * 8; // 8 full spins
+            const stopAngle = 0; // Top position
+            rotation += extraSpins + (360 - (rotation % 360)) + stopAngle;
+
+            canvas.style.transform = `rotate(${rotation}deg)`;
+
+            setTimeout(() => {
+                modal.style.display = 'flex';
+                // Trigger Confetti!
+                confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#fbbf24', '#065f46', '#ffffff']
+                });
+                spinBtn.disabled = false;
+            }, 5200);
+        });
+
+        closeBtn.addEventListener("click", () => {
+            modal.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
